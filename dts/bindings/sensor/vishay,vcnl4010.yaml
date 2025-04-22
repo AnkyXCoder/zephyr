@@ -1,0 +1,84 @@
+# Copyright (c) 2020 Ankitkumar Modi
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  VCNL4010 proximity and ambient light sensor.  See datasheet at
+  https://www.vishay.com/docs/84138/designingvcnl4010.pdf
+
+compatible: "vishay,vcnl4010"
+
+include: [sensor-device.yaml, i2c-device.yaml]
+
+properties:
+  int-gpios:
+    type: phandle-array
+    description: |
+      The INT pin signals that a programmable interrupt function
+      for ALS and PS with upper and lower thresholds has been
+      triggered. The sensor generates an active-low level signal
+      which remains asserted until the data is read.
+
+  led-current:
+    type: int
+    default: 20
+    # default of 20 mA is IR LED Current POR (0b00010) for IR LED CURRENT register
+    description: LED current in mA
+    enum:
+      - 0
+      - 10
+      - 20
+      - 30
+      - 40
+      - 50
+      - 60
+      - 70
+      - 80
+      - 90
+      - 100
+      - 110
+      - 120
+      - 130
+      - 140
+      - 150
+      - 160
+      - 170
+      - 180
+      - 190
+      - 200
+
+  proximity-rate:
+    type: string
+    default: "1.95"
+    # default of 1.95 is POR (0b000) for PROXIMITY RATE register
+    description: Proximity Measurement Rate in measurements per second
+    enum:
+      - "1.95"
+      - "3.90625"
+      - "7.8125"
+      - "16.625"
+      - "31.25"
+      - "62.5"
+      - "125"
+      - "250"
+
+  proximity-trigger:
+    type: string
+    default: "disabled"
+    # default of "disabled" is POR (0b00) for PS_CONF2[PS_INT] register
+    description: Proximity trigger type
+    enum:
+      - "disabled"
+      - "close"
+      - "away"
+      - "close-away"
+
+  als-it:
+    type: int
+    default: 80
+    # default of 80 is POR (0b00) for ALS_CONF[ALS_IT] register
+    description: ALS integration time in ms
+    enum:
+      - 80
+      - 160
+      - 320
+      - 640

@@ -1,0 +1,17 @@
+# Copyright (c) 2023, Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+description: Texas Instrument Single Channel I2C ADC
+
+compatible: "ti,ads7142"
+
+include: [adc-controller.yaml, i2c-device.yaml]
+
+on-bus: i2c
+
+properties:
+  "#io-channel-cells":
+    const: 2
+
+io-channel-cells:
+  - input

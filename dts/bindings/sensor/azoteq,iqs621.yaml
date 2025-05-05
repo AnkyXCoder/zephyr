@@ -1,0 +1,74 @@
+# Copyright(c) 2018, Ankitkumar Modi
+# SPDX-License-Identifier: Apache-2.0
+
+description: IQS621 ambient light, temperature monitoring
+
+compatible: "azoteq,iqs621"
+
+include: [sensor-device.yaml, i2c-device.yaml]
+
+properties:
+  int-gpios:
+    type: phandle-array
+    description: Interrupt pin.
+
+      The interrupt pin of IQS621 is open-drain, active low
+      and indicates a communication window.
+
+  multiplier-coarse:
+    type: int
+    required: true
+    description: |
+      Select the ALS Setting - Coarse Multiplier value.
+      Default value is chosen from the official documentation.
+      - <IQS621_MULTIPLIER_COARSE_3>:  3
+      - <IQS621_MULTIPLIER_COARSE_2>:  2
+      - <IQS621_MULTIPLIER_COARSE_1>:  1
+      - <IQS621_MULTIPLIER_COARSE_0>:  0
+    default: 0
+    enum:
+      - 3
+      - 2
+      - 1
+      - 0
+
+  multiplier-fine:
+    type: int
+    required: true
+    description: |
+      Select the ALS Setting - Fine Multiplier value.
+      Default value is chosen from the official documentation.
+      - <IQS621_MULTIPLIER_FINE_15>:  15
+      - <IQS621_MULTIPLIER_FINE_14>:  14
+      - <IQS621_MULTIPLIER_FINE_13>:  13
+      - <IQS621_MULTIPLIER_FINE_12>:  12
+      - <IQS621_MULTIPLIER_FINE_11>:  11
+      - <IQS621_MULTIPLIER_FINE_10>:  10
+      - <IQS621_MULTIPLIER_FINE_9>:  9
+      - <IQS621_MULTIPLIER_FINE_8>:  8
+      - <IQS621_MULTIPLIER_FINE_7>:  7
+      - <IQS621_MULTIPLIER_FINE_6>:  6
+      - <IQS621_MULTIPLIER_FINE_5>:  5
+      - <IQS621_MULTIPLIER_FINE_4>:  4
+      - <IQS621_MULTIPLIER_FINE_3>:  3
+      - <IQS621_MULTIPLIER_FINE_2>:  2
+      - <IQS621_MULTIPLIER_FINE_1>:  1
+      - <IQS621_MULTIPLIER_FINE_0>:  0
+    default: 0
+    enum:
+      - 15
+      - 14
+      - 13
+      - 12
+      - 11
+      - 10
+      - 9
+      - 8
+      - 7
+      - 6
+      - 5
+      - 4
+      - 3
+      - 2
+      - 1
+      - 0

@@ -21,6 +21,7 @@
 
 	leds: leds {
 		compatible = "gpio-leds";
+
 		green_led: led_0 {
 			gpios = <&gpiob 8 GPIO_ACTIVE_HIGH>;
 			label = "User LD2";
@@ -53,7 +54,7 @@
 };
 
 stm32_lp_tick_source: &lptim1 {
-	clocks = <&rcc STM32_CLOCK_BUS_APB1 0x80000000>,
+	clocks = <&rcc STM32_CLOCK(APB1, 31)>,
 			 <&rcc STM32_SRC_LSI LPTIM1_SEL(3)>;
 	status = "okay";
 };
@@ -102,7 +103,6 @@ stm32_lp_tick_source: &lptim1 {
 };
 
 &flash0 {
-
 	partitions {
 		compatible = "fixed-partitions";
 		#address-cells = <1>;

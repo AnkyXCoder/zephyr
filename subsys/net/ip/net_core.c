@@ -117,7 +117,7 @@ static inline enum net_verdict process_data(struct net_pkt *pkt,
 		/* Consecutive call will forward packets to SOCK_DGRAM packet sockets
 		 * (after L2 removed header).
 		 */
-		ret = net_packet_socket_input(pkt, ETH_P_ALL);
+		ret = net_packet_socket_input(pkt, net_pkt_ll_proto_type(pkt));
 		if (ret != NET_CONTINUE) {
 			return ret;
 		}
@@ -230,8 +230,8 @@ static inline int check_ip(struct net_pkt *pkt)
 			return 0;
 		}
 #endif
-		if (net_ipv6_addr_cmp((struct in6_addr *)NET_IPV6_HDR(pkt)->dst,
-				      net_ipv6_unspecified_address())) {
+		if (net_ipv6_addr_cmp_raw(NET_IPV6_HDR(pkt)->dst,
+					  (const uint8_t *)net_ipv6_unspecified_address())) {
 			NET_DBG("DROP: IPv6 dst address missing");
 			ret = -EADDRNOTAVAIL;
 			goto drop;
@@ -240,10 +240,8 @@ static inline int check_ip(struct net_pkt *pkt)
 		/* If the destination address is our own, then route it
 		 * back to us (if it is not already forwarded).
 		 */
-		if ((net_ipv6_is_addr_loopback(
-				(struct in6_addr *)NET_IPV6_HDR(pkt)->dst) ||
-		    net_ipv6_is_my_addr(
-				(struct in6_addr *)NET_IPV6_HDR(pkt)->dst)) &&
+		if ((net_ipv6_is_addr_loopback_raw(NET_IPV6_HDR(pkt)->dst) ||
+		    net_ipv6_is_my_addr_raw(NET_IPV6_HDR(pkt)->dst)) &&
 		    !net_pkt_forwarding(pkt)) {
 			struct in6_addr addr;
 
@@ -267,8 +265,7 @@ static inline int check_ip(struct net_pkt *pkt)
 		 * in local host, so this is similar as how ::1 unicast
 		 * addresses are handled. See RFC 3513 ch 2.7 for details.
 		 */
-		if (net_ipv6_is_addr_mcast_iface(
-				(struct in6_addr *)NET_IPV6_HDR(pkt)->dst)) {
+		if (net_ipv6_is_addr_mcast_iface_raw(NET_IPV6_HDR(pkt)->dst)) {
 			NET_DBG("IPv6 interface scope mcast dst address");
 			return 1;
 		}
@@ -276,8 +273,7 @@ static inline int check_ip(struct net_pkt *pkt)
 		/* The source check must be done after the destination check
 		 * as having src ::1 is perfectly ok if dst is ::1 too.
 		 */
-		if (net_ipv6_is_addr_loopback(
-				(struct in6_addr *)NET_IPV6_HDR(pkt)->src)) {
+		if (net_ipv6_is_addr_loopback_raw(NET_IPV6_HDR(pkt)->src)) {
 			NET_DBG("DROP: IPv6 loopback src address");
 			ret = -EADDRNOTAVAIL;
 			goto drop;
@@ -304,8 +300,8 @@ static inline int check_ip(struct net_pkt *pkt)
 			return 0;
 		}
 #endif
-		if (net_ipv4_addr_cmp((struct in_addr *)NET_IPV4_HDR(pkt)->dst,
-				      net_ipv4_unspecified_address())) {
+		if (net_ipv4_addr_cmp_raw(NET_IPV4_HDR(pkt)->dst,
+					  net_ipv4_unspecified_address()->s4_addr)) {
 			NET_DBG("DROP: IPv4 dst address missing");
 			ret = -EADDRNOTAVAIL;
 			goto drop;
@@ -314,10 +310,10 @@ static inline int check_ip(struct net_pkt *pkt)
 		/* If the destination address is our own, then route it
 		 * back to us.
 		 */
-		if (net_ipv4_is_addr_loopback((struct in_addr *)NET_IPV4_HDR(pkt)->dst) ||
-		    (net_ipv4_is_addr_bcast(net_pkt_iface(pkt),
-				     (struct in_addr *)NET_IPV4_HDR(pkt)->dst) == false &&
-		     net_ipv4_is_my_addr((struct in_addr *)NET_IPV4_HDR(pkt)->dst))) {
+		if (net_ipv4_is_addr_loopback_raw(NET_IPV4_HDR(pkt)->dst) ||
+		    (net_ipv4_is_addr_bcast_raw(net_pkt_iface(pkt),
+						NET_IPV4_HDR(pkt)->dst) == false &&
+		     net_ipv4_is_my_addr_raw(NET_IPV4_HDR(pkt)->dst))) {
 			struct in_addr addr;
 
 			/* Swap the addresses so that in receiving side
@@ -338,7 +334,7 @@ static inline int check_ip(struct net_pkt *pkt)
 		 * as having src 127.0.0.0/8 is perfectly ok if dst is in
 		 * localhost subnet too.
 		 */
-		if (net_ipv4_is_addr_loopback((struct in_addr *)NET_IPV4_HDR(pkt)->src)) {
+		if (net_ipv4_is_addr_loopback_raw(NET_IPV4_HDR(pkt)->src)) {
 			NET_DBG("DROP: IPv4 loopback src address");
 			ret = -EADDRNOTAVAIL;
 			goto drop;
@@ -378,9 +374,8 @@ static inline bool process_multicast(struct net_pkt *pkt)
 #endif
 #if defined(CONFIG_NET_IPV6)
 	if (family == AF_INET6) {
-		const struct in6_addr *dst = (const struct in6_addr *)&NET_IPV6_HDR(pkt)->dst;
-
-		return net_ipv6_is_addr_mcast(dst) && net_context_get_ipv6_mcast_loop(ctx);
+		return net_ipv6_is_addr_mcast_raw(NET_IPV6_HDR(pkt)->dst) &&
+		       net_context_get_ipv6_mcast_loop(ctx);
 	}
 #endif
 	return false;
@@ -552,6 +547,14 @@ drop:
 int net_recv_data(struct net_if *iface, struct net_pkt *pkt)
 {
 	int ret;
+#if defined(CONFIG_NET_DSA) && !defined(CONFIG_NET_DSA_DEPRECATED)
+	struct ethernet_context *eth_ctx = net_if_l2_data(iface);
+
+	/* DSA driver handles first to untag and to redirect to user interface. */
+	if (eth_ctx != NULL && (eth_ctx->dsa_port == DSA_CONDUIT_PORT)) {
+		iface = dsa_recv(iface, pkt);
+	}
+#endif
 
 	SYS_PORT_TRACING_FUNC_ENTER(net, recv_data, iface, pkt);
 

@@ -64,8 +64,8 @@ static uint32_t pacs_snk_location;
 #endif /* CONFIG_BT_PAC_SNK_LOC */
 #endif /* CONFIG_BT_PAC_SNK */
 
-static uint16_t src_available_contexts = BT_AUDIO_CONTEXT_TYPE_PROHIBITED;
-static uint16_t snk_available_contexts = BT_AUDIO_CONTEXT_TYPE_PROHIBITED;
+static uint16_t src_available_contexts = BT_AUDIO_CONTEXT_TYPE_NONE;
+static uint16_t snk_available_contexts = BT_AUDIO_CONTEXT_TYPE_NONE;
 
 enum {
 	FLAG_ACTIVE,
@@ -308,7 +308,7 @@ static uint16_t supported_context_get(enum bt_audio_dir dir)
 		break;
 	}
 
-	return BT_AUDIO_CONTEXT_TYPE_PROHIBITED;
+	return BT_AUDIO_CONTEXT_TYPE_NONE;
 }
 
 static ssize_t supported_context_read(struct bt_conn *conn,
@@ -1324,7 +1324,7 @@ static void add_bonded_addr_to_client_list(const struct bt_bond_info *info, void
 int bt_pacs_cap_register(enum bt_audio_dir dir, struct bt_pacs_cap *cap)
 {
 	const struct bt_audio_codec_cap *codec_cap;
-	static bool callbacks_registered;
+	static bool first_register;
 	sys_slist_t *pac;
 
 	if (!cap || !cap->codec_cap) {
@@ -1338,18 +1338,18 @@ int bt_pacs_cap_register(enum bt_audio_dir dir, struct bt_pacs_cap *cap)
 		return -EINVAL;
 	}
 
-	/* Restore bonding list */
-	bt_foreach_bond(BT_ID_DEFAULT, add_bonded_addr_to_client_list, NULL);
-
 	LOG_DBG("cap %p dir %s codec_cap id 0x%02x codec_cap cid 0x%04x codec_cap vid 0x%04x", cap,
 		bt_audio_dir_str(dir), codec_cap->id, codec_cap->cid, codec_cap->vid);
 
 	sys_slist_append(pac, &cap->_node);
 
-	if (!callbacks_registered) {
+	if (!first_register) {
 		bt_conn_auth_info_cb_register(&auth_callbacks);
 
-		callbacks_registered = true;
+		/* Restore bonding list */
+		bt_foreach_bond(BT_ID_DEFAULT, add_bonded_addr_to_client_list, NULL);
+
+		first_register = true;
 	}
 
 	if (IS_ENABLED(CONFIG_BT_PAC_SNK_NOTIFIABLE) && dir == BT_AUDIO_DIR_SINK) {
@@ -1561,7 +1561,7 @@ enum bt_audio_context bt_pacs_get_available_contexts(enum bt_audio_dir dir)
 		break;
 	}
 
-	return BT_AUDIO_CONTEXT_TYPE_PROHIBITED;
+	return BT_AUDIO_CONTEXT_TYPE_NONE;
 }
 
 enum bt_audio_context bt_pacs_get_available_contexts_for_conn(struct bt_conn *conn,
@@ -1569,7 +1569,7 @@ enum bt_audio_context bt_pacs_get_available_contexts_for_conn(struct bt_conn *co
 {
 	CHECKIF(conn == NULL) {
 		LOG_ERR("NULL conn");
-		return BT_AUDIO_CONTEXT_TYPE_PROHIBITED;
+		return BT_AUDIO_CONTEXT_TYPE_NONE;
 	}
 
 	return pacs_get_available_contexts_for_conn(conn, dir);

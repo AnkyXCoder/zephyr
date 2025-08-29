@@ -38,7 +38,7 @@ class Harness:
     FAULT = "ZEPHYR FATAL ERROR"
     RUN_PASSED = "PROJECT EXECUTION SUCCESSFUL"
     RUN_FAILED = "PROJECT EXECUTION FAILED"
-    run_id_pattern = r"RunID: (?P<run_id>.*)"
+    run_id_pattern = r"RunID: (?P<run_id>[0-9A-Fa-f]+)"
 
     def __init__(self):
         self._status = TwisterStatus.NONE
@@ -629,6 +629,27 @@ class Pytest(Harness):
             self.status = TwisterStatus.SKIP
             self.instance.reason = 'No tests collected'
 
+class Display_capture(Pytest):
+    def generate_command(self):
+        config = self.instance.testsuite.harness_config
+        pytest_root = [os.path.join(ZEPHYR_BASE, 'scripts', 'pylib', 'display-twister-harness')]
+        config['pytest_root'] = pytest_root
+
+        command = super().generate_command()
+        if test_config_file := self._get_display_config_file(config):
+            command.append(f'--config={test_config_file}')
+        else:
+            logger.warning('No config file provided')
+        return command
+
+    def _get_display_config_file(self, harness_config):
+        if test_config_file := harness_config.get('display_capture_config'):
+            test_config_path = os.path.join(self.source_dir, test_config_file)
+            logger.info(f'test_config_path = {test_config_path}')
+            if os.path.exists(test_config_path):
+                return test_config_path
+        return None
+
 
 class Shell(Pytest):
     def generate_command(self):
@@ -789,7 +810,7 @@ class Test(Harness):
     # Ztest log patterns don't require to match the line start exactly: there are platforms
     # where there is some logging prefix at each console line whereas on other platforms
     # without prefixes the leading space is stripped.
-    test_suite_start_pattern = re.compile(r"Running TESTSUITE (?P<suite_name>\S*)")
+    test_suite_start_pattern = re.compile(r"Running TESTSUITE (?P<suite_name>\w*)")
     test_suite_end_pattern = re.compile(
         r"TESTSUITE (?P<suite_name>\S*)\s+(?P<suite_status>succeeded|failed)"
     )
@@ -1124,7 +1145,8 @@ class Ctest(Harness):
             self.instance.reason = 'No tests collected'
             return
 
-        assert isinstance(suite, junit.TestSuite)
+        if not isinstance(suite, junit.TestSuite):
+            suite = junit.TestSuite.fromelem(suite)
 
         if suite.failures and suite.failures > 0:
             self.status = TwisterStatus.FAIL
@@ -1132,7 +1154,7 @@ class Ctest(Harness):
         elif suite.errors and suite.errors > 0:
             self.status = TwisterStatus.ERROR
             self.instance.reason = 'Error during ctest execution'
-        elif suite.skipped and suite.skipped > 0:
+        elif suite.skipped == suite.tests:
             self.status = TwisterStatus.SKIP
         else:
             self.status = TwisterStatus.PASS
@@ -1149,6 +1171,8 @@ class Ctest(Harness):
                 tc.output = case.system_out
             elif any(isinstance(r, junit.Skipped) for r in case.result):
                 tc.status = TwisterStatus.SKIP
+                tc.reason = next((r.message for r in case.result \
+                        if isinstance(r, junit.Skipped)), 'Ctest skip')
             else:
                 tc.status = TwisterStatus.PASS
 

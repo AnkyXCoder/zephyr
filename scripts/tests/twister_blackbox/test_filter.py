@@ -7,7 +7,7 @@ Blackbox tests for twister's command line functions related to test filtering.
 """
 
 import importlib
-import mock
+from unittest import mock
 import os
 import pytest
 import sys
@@ -55,7 +55,7 @@ class TestFilter:
             'intel',
             [
                 r'(it8xxx2_evb/it81302bx).*?(FILTERED: Not a selected vendor platform)',
-                r'(qemu_x86/atom).*?(FILTERED: Not a selected vendor platform)',
+                r'(hsdk/arc_hsdk).*?(FILTERED: Not a selected vendor platform)',
                 r'(DEBUG\s+- adding intel_adl_crb)'
             ]
         ),

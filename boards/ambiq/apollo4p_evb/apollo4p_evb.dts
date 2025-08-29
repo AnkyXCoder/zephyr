@@ -25,8 +25,7 @@
 		led2 = &led2;
 		sw0 = &button0;
 		sw1 = &button1;
-		rtc = &rtc0;
-		sdhc0 = &sdio0;
+		pwm-led0 = &pwm_led0;
 	};
 
 	leds {
@@ -61,6 +60,14 @@
 			status = "okay";
 		};
 	};
+	pwmleds: pwmleds {
+		compatible = "pwm-leds";
+		status = "disabled";
+		pwm_led0: pwm_led_0 {
+			pwms = <&pwm2 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+			label = "PWM_LED";
+		};
+	};
 };
 
 &uart0 {
@@ -79,15 +86,25 @@
 &adc0 {
 	pinctrl-0 = <&adc0_default>;
 	pinctrl-names = "default";
-	status = "okay";
+	status = "disabled";
 };
 
-&counter0 {
-	status = "okay";
+&timer0 {
+	counter0: counter {
+		status = "disabled";
+	};
+};
+
+&timer2 {
+	pwm2: pwm {
+		pinctrl-0 = <&pwm2_default>;
+		pinctrl-names = "default";
+		status = "disabled";
+	};
 };
 
 &rtc0 {
-	status = "okay";
+	status = "disabled";
 	clock = "XTAL";
 };
 
@@ -102,7 +119,7 @@
 		clock-frequency = <I2C_BITRATE_STANDARD>;
 		scl-gpios = <&gpio0_31 5 (GPIO_OPEN_DRAIN | GPIO_PULL_UP)>;
 		sda-gpios = <&gpio0_31 6 (GPIO_OPEN_DRAIN | GPIO_PULL_UP)>;
-		status = "okay";
+		status = "disabled";
 	};
 };
 
@@ -112,26 +129,26 @@
 		pinctrl-names = "default";
 		cs-gpios = <&gpio0_31 11 GPIO_ACTIVE_LOW>;
 		clock-frequency = <1000000>;
-		status = "okay";
+		status = "disabled";
 	};
 };
 
 &mspi0 {
 	pinctrl-0 = <&mspi0_default>;
 	pinctrl-names = "default";
-	status = "okay";
+	status = "disabled";
 };
 
 &mspi1 {
 	pinctrl-0 = <&mspi1_default>;
 	pinctrl-names = "default";
-	status = "okay";
+	status = "disabled";
 };
 
 &mspi2 {
 	pinctrl-0 = <&mspi2_default>;
 	pinctrl-names = "default";
-	status = "okay";
+	status = "disabled";
 };
 
 &flash0 {

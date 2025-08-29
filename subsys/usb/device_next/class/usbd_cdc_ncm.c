@@ -865,6 +865,7 @@ static void usbd_cdc_ncm_disable(struct usbd_class_data *const c_data)
 	const struct device *dev = usbd_class_get_private(c_data);
 	struct cdc_ncm_eth_data *data = dev->data;
 
+	atomic_clear_bit(&data->state, CDC_NCM_DATA_IFACE_ENABLED);
 	atomic_clear_bit(&data->state, CDC_NCM_CLASS_SUSPENDED);
 
 	LOG_INF("Disabled %s", c_data->name);
@@ -1110,7 +1111,7 @@ static enum ethernet_hw_caps cdc_ncm_get_capabilities(const struct device *dev)
 {
 	ARG_UNUSED(dev);
 
-	return ETHERNET_LINK_10BASE_T;
+	return ETHERNET_LINK_10BASE;
 }
 
 static int cdc_ncm_iface_start(const struct device *dev)

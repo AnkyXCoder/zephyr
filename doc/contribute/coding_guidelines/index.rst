@@ -9,7 +9,12 @@ Main rules
 
 The coding guideline rules are based on MISRA-C 2012 and are a **subset** of MISRA-C.
 The subset is listed in the table below with a summary of the rules, its
-severity and the equivalent rules from other standards for reference.
+MISRA-C severity and the equivalent rules from other standards for reference.
+
+The severity and other references in the table below are for informational
+purposes only. The listed rules are all required for Zephyr and all new code
+should comply with the rules listed below.
+
 
 .. note::
 
@@ -661,7 +666,7 @@ severity and the equivalent rules from other standards for reference.
       -  All if else if constructs shall be terminated with an else statement
       -  `Rule 15.7 <https://gitlab.com/MISRA/MISRA-C/MISRA-C-2012/Example-Suite/-/blob/master/R_15_07.c>`_
       -  Required
-      -  N/A
+      -  CERT, MSC01-C <https://wiki.sei.cmu.edu/confluence/display/c/MSC01-C.+Strive+for+logical+completeness>
 
          .. _MisraC_Rule_16_1:
     * -  90
@@ -946,7 +951,7 @@ severity and the equivalent rules from other standards for reference.
 
          .. _MisraC_Rule_21_13:
     * -  130
-      -  Any value passed to a function in <ctype.h> shall be representable as an unsigned char or be the value EO
+      -  Any value passed to a function in <ctype.h> shall be representable as an unsigned char or be the value EOF
       -  `Rule 21.13 <https://gitlab.com/MISRA/MISRA-C/MISRA-C-2012/Example-Suite/-/blob/master/R_21_13.c>`_
       -  Mandatory
       -  N/A

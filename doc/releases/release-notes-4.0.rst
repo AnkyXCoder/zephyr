@@ -290,7 +290,7 @@ Boards & SoC Support
    * :zephyr:board:`Gardena Smart Garden Radio Module <sgrm>` (``sgrm``)
    * :zephyr:board:`mikroe STM32 M4 Clicker <mikroe_stm32_m4_clicker>` (``mikroe_stm32_m4_clicker``)
    * :zephyr:board:`Nordic Semiconductor nRF54L15 DK <nrf54l15dk>` (``nrf54l15dk``)
-   * :zephyr:board:`Nordic Semiconductor nRF54L20 PDK <nrf54l20pdk>` (``nrf54l20pdk``)
+   * Nordic Semiconductor nRF54L20 PDK (``nrf54l20pdk``)
    * :zephyr:board:`Nordic Semiconductor nRF7002 DK <nrf7002dk>` (``nrf7002dk``)
    * :zephyr:board:`Nuvoton NPCM400_EVB <npcm400_evb>` (``npcm400_evb``)
    * :zephyr:board:`NXP FRDM-MCXA156 <frdm_mcxa156>` (``frdm_mcxa156``)
@@ -320,7 +320,7 @@ Boards & SoC Support
    * :zephyr:board:`Seeed XIAO ESP32-S3 Sense Variant <xiao_esp32s3>`: ``xiao_esp32s3``.
    * :ref:`sensry.io Ganymed Break-Out-Board (BOB) <ganymed_bob>` (``ganymed_bob``)
    * :zephyr:board:`SiLabs SiM3U1xx 32-bit MCU USB Development Kit <sim3u1xx_dk>` (``sim3u1xx_dk``)
-   * :ref:`SparkFun Thing Plus Matter <sparkfun_thing_plus_mgm240p>` (``sparkfun_thing_plus_matter_mgm240p``)
+   * :zephyr:board:`SparkFun Thing Plus Matter <sparkfun_thing_plus_matter_mgm240p>` (``sparkfun_thing_plus_matter_mgm240p``)
    * :zephyr:board:`ST Nucleo G431KB <nucleo_g431kb>` (``nucleo_g431kb``)
    * :zephyr:board:`ST Nucleo H503RB <nucleo_h503rb>` (``nucleo_h503rb``)
    * :zephyr:board:`ST Nucleo H755ZI-Q <nucleo_h755zi_q>` (``nucleo_h755zi_q``)

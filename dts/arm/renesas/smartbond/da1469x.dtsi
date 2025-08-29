@@ -30,6 +30,14 @@
 			reg = <0>;
 			clock-frequency = <32000000>;
 			cpu-power-states = <&standby>;
+
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			mpu: mpu@e000ed90 {
+				compatible = "arm,armv8m-mpu";
+				reg = <0xe000ed90 0x40>;
+			};
 		};
 
 		power-states {
@@ -193,6 +201,7 @@
 				compatible = "renesas,smartbond-gpio";
 				gpio-controller;
 				#gpio-cells = <2>;
+				port = <0>;
 				ngpios = <32>;
 				reg = <0x50020a00 20
 					   0x50020a18 128
@@ -206,6 +215,7 @@
 				compatible = "renesas,smartbond-gpio";
 				gpio-controller;
 				#gpio-cells = <2>;
+				port = <1>;
 				ngpios = <23>;
 				reg = <0x50020a04 20
 					   0x50020a98 92

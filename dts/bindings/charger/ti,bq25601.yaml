@@ -1,0 +1,48 @@
+# Copyright 2025 Ankitkumar Modi
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  BQ25601 I2C battery charge controller IC.
+
+  BQ25601 targets 1-Cell 3-A Buck Battery Charger for High Input Voltage and
+  NVDC Power Path Management
+
+  This charger is represented by device tree child node, e.g:
+
+  charger: bq25601@6b {
+      compatible = "ti,bq25601";
+      reg = <0x6b>;
+      status = "okay";
+
+      constant-charge-current-max-microamp = <1000000>;
+      constant-charge-voltage-max-microvolt = <4352000>;
+      system-voltage-min-threshold-microvolt = <3500000>;
+  };
+
+include: [battery.yaml, i2c-device.yaml]
+
+compatible: "ti,bq25601"
+
+properties:
+  constant-charge-current-max-microamp:
+    required: true
+    description: |
+      The charge current target for the constant current phase of the charge profile.
+      This value will be set at initialization time. Range: 100 mA to 3200 mA.
+      The value specified will be rounded down to the closest implemented value.
+
+  constant-charge-voltage-max-microvolt:
+    required: true
+    description: |
+      The voltage regulation target for the constant voltage phase of the battery charging profile.
+      This value will be set at initialization time. Range: 3.856 V to 4.624 V.
+      The value specified will be rounded down to the closest implemented value.
+
+  system-voltage-min-threshold-microvolt:
+    type: int
+    required: true
+    description: |
+      Minimum system voltage.
+      Voltage that will be set above when the system voltage drops this level.
+      This value will be set at initialization time. Range: 2.6 V to 3.7 V.
+      The value specified will be rounded down to the closest implemented value.

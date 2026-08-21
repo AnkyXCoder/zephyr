@@ -13,6 +13,7 @@
 #include <zephyr/sys/atomic.h>
 #include <zephyr/usb/usbh.h>
 #include <zephyr/usb/usb_ch9.h>
+#include <zephyr/usb/class/usbh_uvc.h>
 #include <zephyr/drivers/usb/udc.h>
 #include <zephyr/drivers/video.h>
 #include <zephyr/video/video.h>
@@ -98,6 +99,7 @@ struct uvc_host_data {
 	struct k_fifo fifo_in;
 	struct k_fifo fifo_out;
 	struct k_poll_signal *sig;
+	usbh_uvc_status_cb_t status_cb;
 
 	atomic_t device_flags;
 
@@ -134,6 +136,31 @@ struct uvc_host_data {
 };
 
 static int stream_iso_req_cb(struct usb_device *const dev, struct uhc_transfer *const xfer);
+
+static void usbh_uvc_notify_status(const struct device *dev,
+				    enum usbh_uvc_dev_status status)
+{
+	struct uvc_host_data *host_data = dev->data;
+
+	if (host_data->status_cb != NULL) {
+		host_data->status_cb(dev, status);
+	}
+}
+
+int usbh_uvc_set_status_cb(const struct device *dev, usbh_uvc_status_cb_t cb)
+{
+	struct uvc_host_data *host_data = dev->data;
+
+	if (host_data == NULL) {
+		return -ENODEV;
+	}
+
+	k_mutex_lock(&host_data->lock, K_FOREVER);
+	host_data->status_cb = cb;
+	k_mutex_unlock(&host_data->lock);
+
+	return 0;
+}
 
 /* Configure UVC device interfaces */
 static int configure_device(struct usbh_class_data *const c_data)
@@ -2407,6 +2434,12 @@ static int usbh_uvc_probe(struct usbh_class_data *const c_data, struct usb_devic
 
 	atomic_set_bit(&host_data->device_flags, UVC_DEVICE_FLAG_CONNECTED);
 
+	usbh_uvc_notify_status(dev, USBH_UVC_DEV_CONNECTED);
+
+	if (IS_ENABLED(CONFIG_POLL) && host_data->sig != NULL) {
+		k_poll_signal_raise(host_data->sig, VIDEO_DEV_CONNECTED);
+	}
+
 	LOG_INF("UVC device (addr=%d) initialization completed", host_data->udev->addr);
 	return 0;
 
@@ -2426,6 +2459,8 @@ static int usbh_uvc_removed(struct usbh_class_data *const c_data)
 
 	atomic_clear_bit(&host_data->device_flags, UVC_DEVICE_FLAG_STREAMING);
 	atomic_clear_bit(&host_data->device_flags, UVC_DEVICE_FLAG_CONNECTED);
+
+	usbh_uvc_notify_status(dev, USBH_UVC_DEV_DISCONNECTED);
 
 	k_mutex_lock(&host_data->lock, K_FOREVER);
 
@@ -2454,8 +2489,8 @@ static int usbh_uvc_removed(struct usbh_class_data *const c_data)
 	}
 
 	if (IS_ENABLED(CONFIG_POLL) && host_data->sig != NULL) {
-		LOG_DBG("Raising VIDEO_BUF_ABORTED signal");
-		k_poll_signal_raise(host_data->sig, VIDEO_BUF_ABORTED);
+		LOG_DBG("Raising VIDEO_DEV_DISCONNECTED signal");
+		k_poll_signal_raise(host_data->sig, VIDEO_DEV_DISCONNECTED);
 	}
 
 	k_mutex_unlock(&host_data->lock);
@@ -3011,6 +3046,7 @@ static int usbh_uvc_set_stream(const struct device *dev, bool enable, enum video
 		alt = 0;
 		interface_num = stream_iface->bInterfaceNumber;
 		atomic_clear_bit(&host_data->device_flags, UVC_DEVICE_FLAG_STREAMING);
+		usbh_uvc_notify_status(dev, USBH_UVC_DEV_STREAMING_STOPPED);
 
 		k_mutex_lock(&host_data->lock, K_FOREVER);
 
@@ -3046,6 +3082,7 @@ static int usbh_uvc_set_stream(const struct device *dev, bool enable, enum video
 
 	if (enable) {
 		atomic_set_bit(&host_data->device_flags, UVC_DEVICE_FLAG_STREAMING);
+		usbh_uvc_notify_status(dev, USBH_UVC_DEV_STREAMING_STARTED);
 
 		k_mutex_lock(&host_data->lock, K_FOREVER);
 
@@ -3075,6 +3112,7 @@ static int usbh_uvc_set_stream(const struct device *dev, bool enable, enum video
 
 err_stream:
 	atomic_clear_bit(&host_data->device_flags, UVC_DEVICE_FLAG_STREAMING);
+	usbh_uvc_notify_status(dev, USBH_UVC_DEV_STREAMING_STOPPED);
 	for (uint8_t i = 0; i < host_data->video_transfer_count; i++) {
 		if (host_data->video_transfer[i] != NULL) {
 			usbh_xfer_dequeue(host_data->udev, host_data->video_transfer[i]);

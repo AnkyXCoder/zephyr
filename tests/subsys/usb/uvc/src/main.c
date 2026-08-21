@@ -8,6 +8,7 @@
 #include <zephyr/usb/usbd.h>
 #include <zephyr/usb/usbh.h>
 #include <zephyr/usb/class/usbd_uvc.h>
+#include <zephyr/usb/class/usbh_uvc.h>
 #include <zephyr/ztest.h>
 #include <sample_usbd.h>
 
@@ -33,6 +34,37 @@ ZTEST(uvc_test, test_virtual_device_virtual_host)
 	LOG_INF("%s", uvc_dev->name);
 
 	/* TODO: test the video devices here. */
+}
+
+static volatile enum usbh_uvc_dev_status last_status;
+static volatile int status_cb_count;
+
+static void test_status_cb(const struct device *dev, enum usbh_uvc_dev_status status)
+{
+	last_status = status;
+	status_cb_count++;
+	LOG_INF("Status callback: dev=%s status=%d count=%d", dev->name, status, status_cb_count);
+}
+
+ZTEST(uvc_test, test_status_cb_register_unregister)
+{
+	const struct device *host_uvc_dev;
+	int ret;
+
+	host_uvc_dev = device_get_binding("usbh_uvc_0");
+	zassert_not_null(host_uvc_dev, "No USB host UVC instance available");
+
+	/* Register a status callback */
+	ret = usbh_uvc_set_status_cb(host_uvc_dev, test_status_cb);
+	zassert_ok(ret, "Failed to register status callback");
+
+	/* Unregister the callback by passing NULL */
+	ret = usbh_uvc_set_status_cb(host_uvc_dev, NULL);
+	zassert_ok(ret, "Failed to unregister status callback");
+
+	/* Re-register the callback */
+	ret = usbh_uvc_set_status_cb(host_uvc_dev, test_status_cb);
+	zassert_ok(ret, "Failed to re-register status callback");
 }
 
 static struct usbd_context *test_usbd;

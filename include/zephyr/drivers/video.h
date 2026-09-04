@@ -618,6 +618,18 @@ static inline int video_driver_transform_cap(const struct device *const dev,
  * completion (done, aborted, error). Registering a NULL poll signal
  * unregisters any previously registered signal.
  *
+ * Drivers that support device state notification (e.g. hot-pluggable video
+ * sources such as a USB UVC camera) may additionally signal the same poll
+ * signal with @ref VIDEO_DEV_CONNECTED, @ref VIDEO_DEV_DISCONNECTED,
+ * @ref VIDEO_STREAM_STARTED or @ref VIDEO_STREAM_STOPPED on the corresponding
+ * state transition.
+ *
+ * @note The poll signal stores a single result value: a raise occurring
+ * before the application has consumed and reset the previous one overwrites
+ * it. Applications must therefore treat the result as a "latest event" hint
+ * rather than assuming every transition is delivered exactly once, and must
+ * not rely on receiving the state events (drivers may omit them).
+ *
  * @param dev Pointer to the device structure for the driver instance.
  * @param sig Pointer to k_poll_signal
  *

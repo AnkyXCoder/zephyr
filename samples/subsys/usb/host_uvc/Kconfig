@@ -7,13 +7,13 @@ menu "Video capture configuration"
 
 config APP_VIDEO_FRAME_HEIGHT
 	int "Height of the video frame"
-	default 240
+	default 120
 	help
 	  Height of the video frame.
 
 config APP_VIDEO_FRAME_WIDTH
 	int "Width of the video frame"
-	default 320
+	default 160
 	help
 	  Width of the video frame.
 

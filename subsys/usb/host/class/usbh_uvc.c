@@ -133,6 +133,20 @@ struct uvc_host_data {
 	struct uvc_ctrls ctrls;
 };
 
+/* Notify the application of a buffer completion or device state event */
+static void uvc_notify_app(struct uvc_host_data *const host_data,
+			   const enum video_signal_result result)
+{
+#if defined(CONFIG_POLL)
+	if (host_data->sig != NULL) {
+		k_poll_signal_raise(host_data->sig, result);
+	}
+#else
+	ARG_UNUSED(host_data);
+	ARG_UNUSED(result);
+#endif
+}
+
 static int stream_iso_req_cb(struct usb_device *const dev, struct uhc_transfer *const xfer);
 
 /* Configure UVC device interfaces */
@@ -2407,6 +2421,8 @@ static int usbh_uvc_probe(struct usbh_class_data *const c_data, struct usb_devic
 
 	atomic_set_bit(&host_data->device_flags, UVC_DEVICE_FLAG_CONNECTED);
 
+	uvc_notify_app(host_data, VIDEO_DEV_CONNECTED);
+
 	LOG_INF("UVC device (addr=%d) initialization completed", host_data->udev->addr);
 	return 0;
 
@@ -2426,6 +2442,8 @@ static int usbh_uvc_removed(struct usbh_class_data *const c_data)
 
 	atomic_clear_bit(&host_data->device_flags, UVC_DEVICE_FLAG_STREAMING);
 	atomic_clear_bit(&host_data->device_flags, UVC_DEVICE_FLAG_CONNECTED);
+
+	uvc_notify_app(host_data, VIDEO_DEV_DISCONNECTED);
 
 	k_mutex_lock(&host_data->lock, K_FOREVER);
 
@@ -3011,6 +3029,7 @@ static int usbh_uvc_set_stream(const struct device *dev, bool enable, enum video
 		alt = 0;
 		interface_num = stream_iface->bInterfaceNumber;
 		atomic_clear_bit(&host_data->device_flags, UVC_DEVICE_FLAG_STREAMING);
+		uvc_notify_app(host_data, VIDEO_STREAM_STOPPED);
 
 		k_mutex_lock(&host_data->lock, K_FOREVER);
 
@@ -3046,6 +3065,7 @@ static int usbh_uvc_set_stream(const struct device *dev, bool enable, enum video
 
 	if (enable) {
 		atomic_set_bit(&host_data->device_flags, UVC_DEVICE_FLAG_STREAMING);
+		uvc_notify_app(host_data, VIDEO_STREAM_STARTED);
 
 		k_mutex_lock(&host_data->lock, K_FOREVER);
 
@@ -3075,6 +3095,7 @@ static int usbh_uvc_set_stream(const struct device *dev, bool enable, enum video
 
 err_stream:
 	atomic_clear_bit(&host_data->device_flags, UVC_DEVICE_FLAG_STREAMING);
+	uvc_notify_app(host_data, VIDEO_STREAM_STOPPED);
 	for (uint8_t i = 0; i < host_data->video_transfer_count; i++) {
 		if (host_data->video_transfer[i] != NULL) {
 			usbh_xfer_dequeue(host_data->udev, host_data->video_transfer[i]);

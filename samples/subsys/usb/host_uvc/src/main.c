@@ -21,19 +21,62 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 USBH_CONTROLLER_DEFINE(uhs_ctx, DEVICE_DT_GET(DT_NODELABEL(zephyr_uhc0)));
 
 /* Wait for video device connection */
-static void wait_for_video_connection(const struct device *uvc_dev, struct video_format *fmt,
-				     enum video_buf_type type)
+static void wait_for_video_connection(const struct device *uvc_dev, struct k_poll_event *evt,
+				      struct k_poll_signal *sig, struct video_format *fmt,
+				      enum video_buf_type type, k_timeout_t timeout)
 {
 	int ret;
 
+	/* The device may be connected before the signal registration */
+	fmt->type = type;
+	if (video_get_format(uvc_dev, fmt) == 0) {
+		LOG_INF("Video device connected!");
+		return;
+	}
+
 	while (true) {
-		fmt->type = type;
-		ret = video_get_format(uvc_dev, fmt);
-		if (ret == 0) {
+		ret = k_poll(evt, 1, timeout);
+		if (ret == 0 && evt->signal->result == VIDEO_DEV_CONNECTED) {
+			k_poll_signal_reset(sig);
 			LOG_INF("Video device connected!");
 			return;
 		}
-		k_sleep(K_MSEC(10));
+		if (ret != 0 && ret != -EAGAIN) {
+			LOG_WRN("Poll failed with error %d", ret);
+			continue;
+		}
+
+		/* Fallback when no signal is registered: poll the device state */
+		if (!K_TIMEOUT_EQ(timeout, K_FOREVER)) {
+			fmt->type = type;
+			if (video_get_format(uvc_dev, fmt) == 0) {
+				LOG_INF("Video device connected!");
+				return;
+			}
+		}
+	}
+}
+
+/* Handle a video event raised on the registered poll signal */
+static int handle_video_event(struct k_poll_signal *sig)
+{
+	switch (sig->result) {
+	case VIDEO_BUF_DONE:
+	case VIDEO_BUF_ERROR:
+		return 0;
+	case VIDEO_STREAM_STARTED:
+		LOG_INF("Video streaming started");
+		return 0;
+	case VIDEO_STREAM_STOPPED:
+		LOG_INF("Video streaming stopped");
+		return 0;
+	case VIDEO_BUF_ABORTED:
+	case VIDEO_DEV_DISCONNECTED:
+		LOG_WRN("Video device disconnected");
+		return -ENODEV;
+	default:
+		LOG_WRN("Unhandled video event %d", sig->result);
+		return 0;
 	}
 }
 
@@ -324,7 +367,7 @@ int main(void)
 
 	while (true) {
 		/* Wait for video device connection */
-		wait_for_video_connection(uvc_dev, &fmt, type);
+		wait_for_video_connection(uvc_dev, &evt[0], &sig, &fmt, type, timeout);
 
 		/* Setup and start streaming */
 		err = setup_video_streaming(uvc_dev, allocated_vbufs, &allocated_count, &fmt);
@@ -345,12 +388,18 @@ int main(void)
 				continue;
 			}
 
+			if (err == 0) {
+				err = handle_video_event(&sig);
+				k_poll_signal_reset(&sig);
+				if (err == -ENODEV) {
+					break;
+				}
+			}
+
 			err = process_video_stream(uvc_dev, &frame_count);
 			if (err == -ENODEV) {
 				break;
 			}
-
-			k_poll_signal_reset(&sig);
 		}
 
 		err = cleanup_video_streaming(uvc_dev, allocated_vbufs, &allocated_count, type);

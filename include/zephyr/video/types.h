@@ -244,9 +244,13 @@ struct video_ctrl_query {
  * Identify video event.
  */
 enum video_signal_result {
-	VIDEO_BUF_DONE,    /**< Buffer is done */
-	VIDEO_BUF_ABORTED, /**< Buffer is aborted */
-	VIDEO_BUF_ERROR,   /**< Buffer is in error */
+	VIDEO_BUF_DONE,         /**< Buffer is done */
+	VIDEO_BUF_ABORTED,      /**< Buffer is aborted */
+	VIDEO_BUF_ERROR,        /**< Buffer is in error */
+	VIDEO_DEV_CONNECTED,    /**< Video device is connected and ready */
+	VIDEO_DEV_DISCONNECTED, /**< Video device was disconnected */
+	VIDEO_STREAM_STARTED,   /**< Video stream has started */
+	VIDEO_STREAM_STOPPED,   /**< Video stream has stopped */
 };
 
 /**
